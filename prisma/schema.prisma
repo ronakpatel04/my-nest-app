@@ -1,19 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum Role {
+
+enum UserRoleEnum {
   ADMIN
   EDITOR
   USER
 }
 
 model User {
-  id        String  @id @default(uuid())
-  email     String  @unique
+  id        String       @id @default(uuid())
+  email     String       @unique
   password  String
   name      String?
-  role      Role    @default(USER)
+  roles     UserInRole[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String?
+  users       UserInRole[]
+  permissions RolePermission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model Permission {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserInRole {
+  id      String @id @default(uuid())
+  userId  String
+  roleId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId]) 
+}
+
+model RolePermission {
+  id          String      @id @default(uuid())
+  roleId      String
+  permissionId String
+  role        Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission  Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
 }
