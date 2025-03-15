@@ -46,11 +46,13 @@ export class AuthService {
           data: { email, password: hashedPassword, name },
         });
 
+        const { password: _, ...userWithoutPassword } = user;
+
         await prisma.userInRole.create({
           data: { userId: user.id, roleId: role.id },
         });
 
-        return createResponse(true, 201, 'User registered successfully', user);
+        return createResponse(true, 201, 'User registered successfully', userWithoutPassword);
       });
     } catch (error) {
       throw error;
@@ -63,7 +65,13 @@ export class AuthService {
         throw new BadRequestException('Email and password are required');
       }
 
-      const user = await this.prisma.user.findUnique({ where: { email } });
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        include: {
+          roles: { include: { role: true } },
+        },
+      });
+
       if (!user) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -73,7 +81,8 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      const token = this.generateToken(user.id, user.email);
+      const role = user.roles[0]?.role?.name || 'user';
+      const token = this.generateToken(user.id, user.email, role);
 
       return createResponse(true, 200, 'User logged in successfully', token);
     } catch (error) {
@@ -90,8 +99,8 @@ export class AuthService {
     }
   }
 
-  private generateToken(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private generateToken(userId: string, email: string,role:string) {
+    const payload = { sub: userId, email ,role};
     return { token: this.jwtService.sign(payload) };
   }
 }

@@ -1,33 +1,60 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { Request } from 'express';
+
+// Define the expected request type
+interface AuthenticatedRequest extends Request {
+  user?: { id: string; email: string; role: string };
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector, private jwtService: JwtService) {}
+  constructor(
+    private reflector: Reflector,
+    private jwtService: JwtService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers['authorization'];
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
+    const requiredRoles = this.reflector.get<string[]>(
+      'roles',
+      context.getHandler(),
+    );
+
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
+
+    const authHeader = request.headers['authorization'];
+    console.log('authHeader >>', authHeader);
     if (!authHeader) {
-      throw new ForbiddenException('Access denied: No token provided');
+      throw new UnauthorizedException('Access denied: No token provided');
     }
 
     try {
-      const token = authHeader.split(' ')[1]; 
+      const token = authHeader.split(' ')[1];
       const decoded = this.jwtService.verify(token);
-    (request as any).user = decoded; 
+      request.user = {
+        id: decoded.sub,
+        email: decoded.email,
+        role: decoded.role,
+      };
 
-      const requiredRole = this.reflector.get<string>('role', context.getHandler());
-      if (requiredRole && decoded.role !== requiredRole) {
+      if (!decoded.role || !requiredRoles.includes(decoded.role)) {
         throw new ForbiddenException('Access denied: Insufficient permissions');
       }
 
       return true;
     } catch (error) {
-      throw new ForbiddenException('Invalid or expired token');
+      throw error;
     }
   }
-
 }
