@@ -34,7 +34,6 @@ export class RolesGuard implements CanActivate {
     }
 
     const authHeader = request.headers['authorization'];
-    console.log('authHeader >>', authHeader);
     if (!authHeader) {
       throw new UnauthorizedException('Access denied: No token provided');
     }

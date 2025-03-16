@@ -5,8 +5,10 @@ import {
   UpdatePermissionDto,
 } from './dto/permission.dto';
 import { PermissionService } from './permission.service';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('permission')
+@ApiBearerAuth('access-token')
 export class PermissionController {
   constructor(private permissionService: PermissionService) {}
 

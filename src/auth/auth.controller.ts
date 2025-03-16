@@ -1,7 +1,8 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { createResponse } from 'src/utils/response.util';
 import { Public } from './public.decorator';
+import { SigninDto, SignupDto } from './dto/auth.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -10,12 +11,7 @@ export class AuthController {
   @Post('signup')
   async signup(
     @Body()
-    body: {
-      email: string;
-      password: string;
-      roleName: string;
-      name?: string;
-    },
+    body: SignupDto,
   ) {
     const user = await this.authService.signup(
       body.email,
@@ -27,7 +23,17 @@ export class AuthController {
 
   @Public()
   @Post('signin')
-  signin(@Body() dto: { email: string; password: string }) {
+  signin(@Body() dto: SigninDto) {
     return this.authService.signin(dto.email, dto.password);
+  }
+
+  @Post('logout')
+  @ApiBearerAuth('access-token')
+  async logout(@Req() req) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return { message: 'No token provided' };
+
+    await this.authService.logout(token);
+    return { message: 'Logged out successfully' };
   }
 }

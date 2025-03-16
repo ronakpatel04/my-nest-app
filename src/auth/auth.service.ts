@@ -17,6 +17,8 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  private blacklistedTokens: Set<string> = new Set();
+
   async signup(
     email: string,
     password: string,
@@ -52,7 +54,12 @@ export class AuthService {
           data: { userId: user.id, roleId: role.id },
         });
 
-        return createResponse(true, 201, 'User registered successfully', userWithoutPassword);
+        return createResponse(
+          true,
+          201,
+          'User registered successfully',
+          userWithoutPassword,
+        );
       });
     } catch (error) {
       throw error;
@@ -98,9 +105,16 @@ export class AuthService {
       );
     }
   }
+  async logout(token: string) {
+    this.blacklistedTokens.add(token);
+  }
 
-  private generateToken(userId: string, email: string,role:string) {
-    const payload = { sub: userId, email ,role};
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    return this.blacklistedTokens.has(token);
+  }
+
+  private generateToken(userId: string, email: string, role: string) {
+    const payload = { sub: userId, email, role };
     return { token: this.jwtService.sign(payload) };
   }
 }

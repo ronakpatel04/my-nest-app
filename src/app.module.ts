@@ -9,6 +9,7 @@ import { RoleModule } from './role/role.module';
 import { PermissionModule } from './permission/permission.module';
 import { RolesGuard } from './role/roles.guard';
 import { DocumentModule } from './document/document.module';
+import { IngestionModule } from './ingestion/ingestion.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { DocumentModule } from './document/document.module';
     RoleModule,
     PermissionModule,
     DocumentModule,
+    IngestionModule,
   ],
   controllers: [AppController],
   providers: [
